@@ -216,7 +216,9 @@ public class TicketServiceImpl implements TicketService {
 
 	private boolean isEmailValid(String email) {
 		// Can be a complex regular expression to make a better match.
-		if (email.matches("([\\w]*)@([\\w]*)\\.([\\w]*)"))
+		//^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$
+		if(email.matches("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"))
+//		if (email.matches("([\\w]*)@([\\w]*)\\.([\\w]*)"))
 			return true;
 		return false;
 	}
