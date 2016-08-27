@@ -7,7 +7,8 @@ Instructions:
 	
 	Command line execution:
 	-----------------------
-	Once compiled, navigate to TicketServiceImpl.class location. 
+	Once compiled, navigate to target folder.
+	Run: "java -jar $jarname"
 	Follow the instructions on screen to play with the system.
 
 	Dependencies:
