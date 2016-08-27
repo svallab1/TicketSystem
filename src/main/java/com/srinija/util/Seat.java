@@ -1,46 +1,27 @@
 package com.srinija.util;
 
-import java.util.HashMap;
-import java.util.Map;
-import static com.srinija.util.VenueLevel.*;
+import static com.srinija.util.AppConstants.priceMap;
 
 public class Seat {
 
-	private String id;
-	public SeatStatus status = SeatStatus.AVAILABLE;
+	private Integer id;
 	private VenueLevel level;
-
-	private final static Map<VenueLevel, Integer> priceMap = new HashMap<VenueLevel, Integer>();
-	static {
-		priceMap.put(ORCHESTRA, 100);
-		priceMap.put(MAIN, 75);
-		priceMap.put(BALCONY1, 50);
-		priceMap.put(BALCONY2, 40);
-	}
 
 	public static int getPrice(VenueLevel level) {
 		return priceMap.get(level);
 	}
 
-	public Seat(String id, VenueLevel level) {
+	public Seat(Integer id, VenueLevel level) {
 		this.id = id;
 		this.level = level;
 
 	}
 
-	public SeatStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(SeatStatus status) {
-		this.status = status;
-	}
-
-	public String getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 
@@ -51,4 +32,19 @@ public class Seat {
 	public void setLevel(VenueLevel level) {
 		this.level = level;
 	}
+
+	@Override
+	public String toString() {
+		return new String("{Seat id: " + id + "; Seat Level: " + level+"}");
+
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		Seat s = (Seat) obj;
+		if (this.id == s.getId() && this.getLevel() == s.getLevel())
+			return true;
+		return false;
+	}
+
 }

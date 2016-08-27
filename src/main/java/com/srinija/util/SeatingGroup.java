@@ -5,11 +5,10 @@ import static com.srinija.util.SeatStatus.BOOKED;
 import static com.srinija.util.SeatStatus.HOLD;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class SeatingGroup {
 
@@ -18,8 +17,8 @@ public class SeatingGroup {
 	private int rowCount = 0;
 	private int seatsPerRow = 0;
 
-	private Map<String, SeatStatus> seatsMap;
-	private SortedSet<String> availableSeats;
+	private Map<Integer, SeatStatus> seatsMap;
+	private List<Integer> seatList;
 
 	public SeatingGroup(VenueLevel level) {
 		this.level = level;
@@ -37,55 +36,99 @@ public class SeatingGroup {
 			seatsPerRow = 100;
 		}
 
-		seatsMap = new HashMap<String, SeatStatus>();
+		seatsMap = new HashMap<Integer, SeatStatus>();
 
+		//Initialize all seats in the group to AVAILABLE.
 		for (int i = 0; i < rowCount; i++) {
 			for (int j = 0; j < seatsPerRow; j++) {
-				seatsMap.put("" + (char) ('A' + i) + (j + 1), AVAILABLE);
+				seatsMap.put(Integer.valueOf(
+						level.getLevelAsInt() + "" + String.format("%02d", i + 1) + String.format("%03d", (j + 1))),
+						AVAILABLE);
 			}
 		}
-		availableSeats = new TreeSet<String>(seatsMap.keySet());
+		// availableSeats = new TreeSet<Integer>(seatsMap.keySet());
+		seatList = new ArrayList<Integer>(seatsMap.keySet());
 
 	}
 
 	public synchronized List<Seat> holdSeats(int count) {
-		if (count <= 0 || count > availableSeats.size())
+		if (count <= 0 || count > seatList.size())
 			return null;
 
-		List<Seat> heldSeats = new ArrayList<Seat>();
-		for (int i = 0; i < count; i++) {
-			String seatId = availableSeats.first();
-			availableSeats.remove(seatId);
-			SeatStatus currentStatus = seatsMap.get(seatId);
-			if (currentStatus != null && currentStatus.equals(AVAILABLE))
-				seatsMap.put(seatId, HOLD);
+		Collections.sort(seatList);
+		return getBestSeats(count);
+	}
 
-			heldSeats.add(new Seat(seatId, this.level));
+	/*
+	 * Assumption: Best seat criteria: Longest subsequence in minimum venue
+	 * level. That is, in a given venue level, maximum possible sets of
+	 * continous seats(sets with decreasing order of length. Here sets do not
+	 * refer to Collections Set).
+	 */
+	private List<Seat> getBestSeats(int count) {
+
+		int startPoint = 0, maxLenth = 0;
+		for (int i = 0; i < seatList.size();) {
+
+			int j = seatList.get(i);
+			while (seatList.contains(j) && seatsMap.get(j).equals(AVAILABLE))
+				j++;
+			int temp = seatList.indexOf(j - 1) - i + 1;
+			if (maxLenth < temp) {
+				maxLenth = temp;
+				startPoint = i;
+				if (maxLenth >= count) {
+					List<Integer> result = seatList.subList(startPoint, startPoint + count);
+					List<Seat> heldSeats = new ArrayList<Seat>();
+					for (Integer k : result) {
+						seatsMap.put(k, HOLD);
+						heldSeats.add(new Seat(k, level));
+					}
+					seatList.removeAll(result);
+					return heldSeats;
+				}
+			}
+			i += maxLenth;
 		}
 
+		List<Integer> result = seatList.subList(startPoint, startPoint + maxLenth);
+		List<Seat> heldSeats = new ArrayList<Seat>();
+		for (Integer i : result) {
+			seatsMap.put(i, HOLD);
+			heldSeats.add(new Seat(i, level));
+		}
+		seatList.removeAll(result);
+		heldSeats.addAll(getBestSeats(count - maxLenth));
 		return heldSeats;
 	}
 
+	/*
+	 * Release only seats that are in HOLD state. Assumption: a booked ticket
+	 * cannot be cancelled.
+	 */
 	public synchronized void releaseSeats(List<Seat> heldSeats) {
 		if (heldSeats == null)
 			return;
 		for (Seat s : heldSeats) {
 			if (s.getLevel() == this.level) {
-				String seatId = s.getId();
-				if (seatsMap.get(seatId) != BOOKED) {
-					availableSeats.add(seatId);
+				Integer seatId = s.getId();
+				if (seatsMap.get(seatId) == HOLD) {
+					seatList.add(seatId);
 					seatsMap.put(seatId, AVAILABLE);
 				}
 			}
 		}
 	}
 
+	/*
+	 * Assumption: Only tickets on HOLD can be BOOKED.
+	 */
 	public synchronized boolean confirmSeats(List<Seat> seatIds) {
 		if (seatIds == null)
 			return false;
 		for (Seat s : seatIds) {
 			if (s.getLevel() == this.level) {
-				String seatId = s.getId();
+				Integer seatId = s.getId();
 				if (seatsMap.get(seatId) == HOLD) {
 					seatsMap.put(seatId, BOOKED);
 				} else
@@ -99,27 +142,12 @@ public class SeatingGroup {
 		return level;
 	}
 
-	public void setLevel(VenueLevel level) {
-		this.level = level;
+	public synchronized int getAvailableSeats() {
+		return seatList.size();
 	}
 
-	public int getRowCount() {
-		return rowCount;
-	}
-
-	public void setRowCount(int rowCount) {
-		this.rowCount = rowCount;
-	}
-
-	public int getSeatsPerRow() {
-		return seatsPerRow;
-	}
-
-	public void setSeatsPerRow(int seatsPerRow) {
-		this.seatsPerRow = seatsPerRow;
-	}
-	
-	public synchronized int getAvailableSeats(){
-		return availableSeats.size();
+	@Override
+	public String toString() {
+		return seatsMap.toString();
 	}
 }

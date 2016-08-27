@@ -7,4 +7,8 @@ public enum VenueLevel {
 	VenueLevel(int level){
 		this.level = level;
 	}
+	
+	public int getLevelAsInt(){
+		return this.level;
+	}
 }

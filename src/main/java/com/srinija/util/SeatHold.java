@@ -9,16 +9,21 @@ public class SeatHold {
 	private int id;
 	private List<Seat> seats;
 	private int totalPrice;
-	private long expireAt ;
+	private String userEmail;
+	private long expireAt;
 
-	public SeatHold(int id) {
-		this.id = id;
-	}
+	private static final int lifeTime = 20000; // seat hold expires after 20
+												// seconds.
 
 	public SeatHold(int id, List<Seat> seats) {
 		this.id = id;
 		setSeats(seats);
-		
+		setExpireAt(lifeTime);
+	}
+
+	public SeatHold(int id) {
+		this.id = id;
+		setExpireAt(lifeTime);
 	}
 
 	public List<Seat> getSeats() {
@@ -39,26 +44,40 @@ public class SeatHold {
 		return id;
 	}
 
-	public void setId(int id) {
-		this.id = id;
-	}
-
 	public int getTotalPrice() {
 		return totalPrice;
 	}
 
-	public void setExpireAt(){
-		this.expireAt = System.currentTimeMillis();
+	public synchronized void setExpireAt(int t) {
+		this.expireAt = System.currentTimeMillis() + t;
 	}
-	
-	public boolean isExpired(){
-		return (expireAt -System.currentTimeMillis()) > 0; 
+
+	public synchronized boolean isExpired() {
+		return (expireAt - System.currentTimeMillis()) < 0;
 	}
-	
-	public void inValidate(){
-		for(SeatingGroup sg : TicketServiceImpl.seats){
+
+	// Invalidate the SeatHold object.
+	public synchronized void inValidate() {
+		for (SeatingGroup sg : TicketServiceImpl.seats) {
 			sg.releaseSeats(getSeats());
 		}
+	}
+
+	public void setEmail(String email) {
+		this.userEmail = email;
+	}
+
+	public String getEmail() {
+		return this.userEmail;
+	}
+	
+	@Override
+	public String toString(){
+		StringBuilder sb = new StringBuilder();
+		sb.append("Transaction id: "+this.id);
+		sb.append("; Email id: "+userEmail);
+		sb.append("; Seats: "+this.seats);
+		return sb.toString();
 	}
 
 }
