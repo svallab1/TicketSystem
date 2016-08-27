@@ -3,8 +3,10 @@ package com.srinija.service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Timer;
@@ -197,17 +199,16 @@ public class TicketServiceImpl implements TicketService {
 		if (seatHoldId == 0 || seatHoldId >= seqNum.get() || seatHold == null || "".equals(customerEmail)
 				|| !seatHold.getEmail().equals(customerEmail)) {
 			logger.info("Invalid seat hold id or email.");
-			return "INCORRECT RESERVATION";
+			return AppConstants.INCORRECT_RESERVATION;
 		}
 
 		for (SeatingGroup sg : seats) {
-			if (sg.confirmSeats(seatHold.getSeats())){
+			if (sg.confirmSeats(seatHold.getSeats())) {
 				synchronized (TicketServiceImpl.class) {
 					seatHolds.remove(seatHold);
 				}
 				return AppConstants.SUCCESS_CONFIRMATION;
-			}
-			else
+			} else
 				sg.releaseSeats(seatHold.getSeats());
 		}
 		return AppConstants.FAILED_CONFIRMATION;
@@ -233,13 +234,15 @@ public class TicketServiceImpl implements TicketService {
 		@Override
 		public void run() {
 			// Check for expired SeatHolds and release them
-			logger.info(this.getClass().getName() + " Checking for expired SeatHolds.");
-			for (Integer s : seatHolds.keySet()) {
-				if (seatHolds.get(s).isExpired()) {
-					logger.info(s + "Expired.");
-					seatHolds.get(s).inValidate();
-					synchronized (TicketServiceImpl.class) {
-						seatHolds.remove(s);
+			logger.fine(this.getClass().getName() + " Checking for expired SeatHolds.");
+			synchronized (TicketServiceImpl.class) {
+				Iterator<Entry<Integer, SeatHold>> it = seatHolds.entrySet().iterator();
+				while(it.hasNext()){
+					Entry<Integer, SeatHold> s = it.next();
+					if (s.getValue().isExpired()) {
+						logger.info(s + "Expired.");
+						s.getValue().inValidate();
+						it.remove();
 					}
 				}
 			}

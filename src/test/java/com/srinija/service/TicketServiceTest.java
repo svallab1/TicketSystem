@@ -88,29 +88,6 @@ public class TicketServiceTest {
 		assertEquals(1250, sh.getSeats().size());
 	}
 
-	@Test
-	public void testHoldReleaseAndHold() {
-		SeatHold sh = obj.findAndHoldSeats(20, Optional.of(0), Optional.of(3), validEmail);
-		assertEquals(20, sh.getSeats().size());
-		List<Seat> seats = sh.getSeats();
-		sh.setExpireAt(0);
-		try {
-			Thread.sleep(600);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		sh = obj.findAndHoldSeats(20, Optional.of(0), Optional.of(3), validEmail);
-		List<Seat> seats2 = sh.getSeats();
-		for (Seat s : seats) {
-			if (!seats2.contains(s)) {
-				System.out.println("First hold seats: " + seats);
-				System.out.println("Second hold seats: " + seats2);
-				System.out.println("Unmatched seat: " + s);
-				throw new AssertionError("Seats do not match");
-			}
-		}
-	}
-
 	// Multi thread access
 	@Test
 	public void testMultiThread() {
@@ -132,21 +109,24 @@ public class TicketServiceTest {
 				} catch (InterruptedException e) {
 					System.out.println(e.getMessage());
 				}
-				assertEquals(AppConstants.FAILED_CONFIRMATION, obj.reserveSeats(sh.getId(), sh.getEmail()));
+				assertEquals(AppConstants.INCORRECT_RESERVATION, obj.reserveSeats(sh.getId(), sh.getEmail()));
 			}
 		}
 		;
 
-		Thread t1 = new Thread(new R());
-		t1.start();
-		Thread t2 = new Thread(new R2());
-		t2.start();
-		Thread t3 = new Thread(new R2());
-		t3.start();
-		Thread t4 = new Thread(new R());
-		t4.start();
-		Thread t5 = new Thread(new R());
-		t5.start();
+		Thread[] threads = new Thread[5];
+		for (int i = 0; i < 3; i++) 
+			threads[i] = new Thread(new R());
+		for (int i = 3; i < 5; i++)
+			threads[i] = new Thread(new R2());
 
+		for(int i = 0 ; i < 5 ; i++)
+			threads[i].start();
+		try {
+			for(int i = 0 ; i < 5 ; i++)
+				threads[i].join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }
